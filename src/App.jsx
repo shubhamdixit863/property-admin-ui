@@ -149,7 +149,7 @@ function Login({ onSuccess }) {
       <section className="login-card">
         <div className="login-brand">
           <div className="brand-mark"></div>
-          <h1>Logip Admin</h1>
+          <h1>Suteerth Admin</h1>
           <p>
             Manage premium property inventory, approvals, and leasing signals in
             a single cockpit.
@@ -163,7 +163,7 @@ function Login({ onSuccess }) {
         <form className="login-form" onSubmit={handleSubmit}>
           <div>
             <h2>Admin login</h2>
-            <p>Use your credentials to continue.</p>
+          <p>Use your credentials to continue.</p>
           </div>
           <label className="field">
             Email
@@ -202,8 +202,8 @@ function Sidebar({ session, onLogout }) {
       <div className="brand">
         <div className="brand-mark"></div>
         <div>
-          <h1>Logip</h1>
-          <span>Admin Console</span>
+          <h1>Suteerth</h1>
+          <span>Suteerth Admin Console</span>
         </div>
       </div>
       <div className="nav">
@@ -248,7 +248,16 @@ function Layout({ session, onLogout, children }) {
   return (
     <div className="app-shell">
       <Sidebar session={session} onLogout={onLogout} />
-      <main className="content">{children}</main>
+      <main className="content">
+        {children}
+        <footer className="app-footer">
+          <div className="brand">
+            <div className="brand-mark"></div>
+            <strong>Suteerth</strong>
+          </div>
+          <span>Admin console</span>
+        </footer>
+      </main>
     </div>
   );
 }

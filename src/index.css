@@ -217,7 +217,7 @@ textarea {
 
 .nav {
   display: grid;
-  gap: 10px;
+  gap: 2px;
 }
 
 .nav-item {
@@ -225,7 +225,7 @@ textarea {
   text-decoration: none;
   border: none;
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 8px 12px;
   text-align: left;
   background: rgba(255, 255, 255, 0.05);
   color: var(--ink);
@@ -251,6 +251,23 @@ textarea {
   padding: 36px 40px;
   display: grid;
   gap: 24px;
+}
+
+.app-footer {
+  margin-top: 8px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.app-footer .brand {
+  gap: 10px;
 }
 
 .hero {
