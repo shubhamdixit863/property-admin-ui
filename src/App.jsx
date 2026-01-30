@@ -31,6 +31,18 @@ const emptyForm = {
   status: "active",
 };
 
+const emptySiteProperties = {
+  logo: "",
+  address: "",
+  about_us: "",
+  contact: "",
+  footer_image: "",
+  linkedin: "",
+  instagram: "",
+  facebook: "",
+  twitter: "",
+};
+
 const statusOptions = ["active", "pending", "archived"];
 const featureOptions = [
   "Hardwood Floors Throughout",
@@ -138,7 +150,12 @@ function Login({ onSuccess }) {
       saveAuth(session);
       onSuccess(session);
     } catch (err) {
-      setError(err.message);
+      if (err.status === 404) {
+        setForm(emptySiteProperties);
+        setHasData(false);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -226,6 +243,12 @@ function Sidebar({ session, onLogout }) {
           to="/enquiries"
         >
           Enquiries
+        </NavLink>
+        <NavLink
+          className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+          to="/site-properties"
+        >
+          Site Properties
         </NavLink>
       </div>
       <div className="sidebar-card">
@@ -1479,6 +1502,255 @@ function EnquiryDetailPage({ session, onLogout }) {
   );
 }
 
+function SitePropertiesPage({ session, onLogout }) {
+  const [form, setForm] = useState(emptySiteProperties);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [hasData, setHasData] = useState(false);
+
+  const populateForm = (data) => {
+    setForm({
+      logo: data?.logo || "",
+      address: data?.address || "",
+      about_us: data?.about_us || "",
+      contact: data?.contact || "",
+      footer_image: data?.footer_image || "",
+      linkedin: data?.linkedin || "",
+      instagram: data?.instagram || "",
+      facebook: data?.facebook || "",
+      twitter: data?.twitter || "",
+    });
+    setLogoFile(null);
+    setLogoPreview(data?.logo || "");
+  };
+
+  const loadSiteProperties = async () => {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const data = await apiRequest("/admin/site-properties", {
+        method: "GET",
+        token: session.token,
+      });
+      if (data && Object.keys(data).length > 0) {
+        populateForm(data);
+        setHasData(true);
+      } else {
+        setForm(emptySiteProperties);
+        setHasData(false);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSiteProperties();
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (logoPreview && logoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleReset = () => {
+    if (hasData) {
+      loadSiteProperties();
+      return;
+    }
+    setForm(emptySiteProperties);
+    setLogoFile(null);
+    setLogoPreview("");
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+    setError("");
+    try {
+      const formData = new FormData();
+      if (logoFile) {
+        formData.append("logo", logoFile);
+      }
+      formData.append("address", form.address.trim());
+      formData.append("about_us", form.about_us.trim());
+      formData.append("contact", form.contact.trim());
+      formData.append("footer_image", form.footer_image.trim());
+      formData.append("linkedin", form.linkedin.trim());
+      formData.append("instagram", form.instagram.trim());
+      formData.append("facebook", form.facebook.trim());
+      formData.append("twitter", form.twitter.trim());
+      await apiRequest("/admin/site-properties", {
+        method: "POST",
+        token: session.token,
+        body: formData,
+      });
+      setMessage(hasData ? "Site properties updated." : "Site properties created.");
+      setHasData(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Layout session={session} onLogout={onLogout}>
+      <section className="hero">
+        <div>
+          <h2>Site properties</h2>
+          <p>Manage the marketing, branding, and contact details on the public site.</p>
+        </div>
+        <div className="hero-actions">
+          <button className="btn secondary" onClick={loadSiteProperties} disabled={loading}>
+            Refresh
+          </button>
+        </div>
+      </section>
+      <section className="panel">
+        <header>
+          <h3>Details</h3>
+          <span className="chip">{hasData ? "Live" : "Draft"}</span>
+        </header>
+        {error ? <div className="error-banner">{error}</div> : null}
+        {message ? <div className="helper">{message}</div> : null}
+        {loading ? (
+          <div className="empty-state">Loading site properties...</div>
+        ) : (
+        <form className="form" onSubmit={handleSubmit}>
+            <label className="field">
+              Logo file
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  if (logoPreview && logoPreview.startsWith("blob:")) {
+                    URL.revokeObjectURL(logoPreview);
+                  }
+                  setLogoFile(file);
+                  setLogoPreview(file ? URL.createObjectURL(file) : form.logo);
+                }}
+              />
+              <span className="helper">
+                Upload a logo file. Leave empty to keep the current logo.
+              </span>
+            </label>
+            {logoPreview ? (
+              <div className="image-grid">
+                <div className="image-tile">
+                  <img src={logoPreview} alt="Logo preview" />
+                  <span>Logo preview</span>
+                </div>
+              </div>
+            ) : null}
+            <label className="field">
+              Address
+              <input
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                placeholder="123 Main St, City, State"
+              />
+            </label>
+            <label className="field">
+              About us
+              <textarea
+                name="about_us"
+                value={form.about_us}
+                onChange={handleChange}
+                rows="4"
+                placeholder="We help people find homes."
+              />
+            </label>
+            <label className="field">
+              Contact
+              <input
+                name="contact"
+                value={form.contact}
+                onChange={handleChange}
+                placeholder="+1 555-123-4567"
+              />
+            </label>
+            <label className="field">
+              Footer image URL
+              <input
+                name="footer_image"
+                value={form.footer_image}
+                onChange={handleChange}
+                placeholder="https://cdn.example.com/footer.jpg"
+              />
+            </label>
+            <div className="field-row">
+              <label className="field">
+                LinkedIn
+                <input
+                  name="linkedin"
+                  value={form.linkedin}
+                  onChange={handleChange}
+                  placeholder="https://linkedin.com/company/acme"
+                />
+              </label>
+              <label className="field">
+                Instagram
+                <input
+                  name="instagram"
+                  value={form.instagram}
+                  onChange={handleChange}
+                  placeholder="https://instagram.com/acme"
+                />
+              </label>
+            </div>
+            <div className="field-row">
+              <label className="field">
+                Facebook
+                <input
+                  name="facebook"
+                  value={form.facebook}
+                  onChange={handleChange}
+                  placeholder="https://facebook.com/acme"
+                />
+              </label>
+              <label className="field">
+                Twitter / X
+                <input
+                  name="twitter"
+                  value={form.twitter}
+                  onChange={handleChange}
+                  placeholder="https://twitter.com/acme"
+                />
+              </label>
+            </div>
+            <div className="actions">
+              <button className="btn primary" type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save changes"}
+              </button>
+              <button className="btn ghost" type="button" onClick={handleReset}>
+                Reset
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+    </Layout>
+  );
+}
+
 function LoginPage({ session, onAuth }) {
   const navigate = useNavigate();
 
@@ -1573,6 +1845,14 @@ export default function App() {
           element={
             <RequireAuth session={session}>
               <EnquiryDetailPage session={session} onLogout={handleLogout} />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/site-properties"
+          element={
+            <RequireAuth session={session}>
+              <SitePropertiesPage session={session} onLogout={handleLogout} />
             </RequireAuth>
           }
         />
